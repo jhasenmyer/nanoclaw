@@ -232,6 +232,10 @@ function buildContainerArgs(
     args.push('-e', 'CLAUDE_CODE_OAUTH_TOKEN=placeholder');
   }
 
+  // Tell the Ollama MCP server how to reach the host's Ollama instance
+  const ollamaHost = process.env.OLLAMA_HOST || `http://${CONTAINER_HOST_GATEWAY}:11434`;
+  args.push('-e', `OLLAMA_HOST=${ollamaHost}`);
+
   // Runtime-specific args for host gateway resolution
   args.push(...hostGatewayArgs());
 
