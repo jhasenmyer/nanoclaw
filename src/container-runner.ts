@@ -240,7 +240,9 @@ function buildContainerArgs(
 
   // Detect local/non-Anthropic models and signal the agent runner to use
   // a slimmed-down tool set that smaller models can handle.
-  const upstreamBaseUrl = readEnvFile(['ANTHROPIC_BASE_URL']).ANTHROPIC_BASE_URL;
+  const upstreamBaseUrl = readEnvFile([
+    'ANTHROPIC_BASE_URL',
+  ]).ANTHROPIC_BASE_URL;
   if (
     upstreamBaseUrl &&
     !upstreamBaseUrl.includes('anthropic.com') &&
