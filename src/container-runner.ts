@@ -26,6 +26,7 @@ import {
   stopContainer,
 } from './container-runtime.js';
 import { detectAuthMode } from './credential-proxy.js';
+import { readEnvFile } from './env.js';
 import { validateAdditionalMounts } from './mount-security.js';
 import { RegisteredGroup } from './types.js';
 
@@ -233,8 +234,21 @@ function buildContainerArgs(
   }
 
   // Tell the Ollama MCP server how to reach the host's Ollama instance
-  const ollamaHost = process.env.OLLAMA_HOST || `http://${CONTAINER_HOST_GATEWAY}:11434`;
+  const ollamaHost =
+    process.env.OLLAMA_HOST || `http://${CONTAINER_HOST_GATEWAY}:11434`;
   args.push('-e', `OLLAMA_HOST=${ollamaHost}`);
+
+  // Detect local/non-Anthropic models and signal the agent runner to use
+  // a slimmed-down tool set that smaller models can handle.
+  const upstreamBaseUrl = readEnvFile(['ANTHROPIC_BASE_URL']).ANTHROPIC_BASE_URL;
+  if (
+    upstreamBaseUrl &&
+    !upstreamBaseUrl.includes('anthropic.com') &&
+    !upstreamBaseUrl.includes('googleapis.com') &&
+    !upstreamBaseUrl.includes('amazonaws.com')
+  ) {
+    args.push('-e', 'NANOCLAW_LOCAL_MODEL=1');
+  }
 
   // Runtime-specific args for host gateway resolution
   args.push(...hostGatewayArgs());

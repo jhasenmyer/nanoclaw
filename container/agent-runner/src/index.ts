@@ -399,17 +399,26 @@ async function runQuery(
       systemPrompt: globalClaudeMd
         ? { type: 'preset' as const, preset: 'claude_code' as const, append: globalClaudeMd }
         : undefined,
-      allowedTools: [
-        'Bash',
-        'Read', 'Write', 'Edit', 'Glob', 'Grep',
-        'WebSearch', 'WebFetch',
-        'Task', 'TaskOutput', 'TaskStop',
-        'TeamCreate', 'TeamDelete', 'SendMessage',
-        'TodoWrite', 'ToolSearch', 'Skill',
-        'NotebookEdit',
-        'mcp__nanoclaw__*',
-        'mcp__ollama__*'
-      ],
+      allowedTools: process.env.NANOCLAW_LOCAL_MODEL
+        ? [
+            // Slim tool set for local models (Ollama/Qwen/etc.) to keep the
+            // tool manifest small enough for models with limited context.
+            'Bash',
+            'Read', 'Write', 'Edit', 'Glob', 'Grep',
+            'WebSearch',
+            'mcp__nanoclaw__*',
+          ]
+        : [
+            'Bash',
+            'Read', 'Write', 'Edit', 'Glob', 'Grep',
+            'WebSearch', 'WebFetch',
+            'Task', 'TaskOutput', 'TaskStop',
+            'TeamCreate', 'TeamDelete', 'SendMessage',
+            'TodoWrite', 'ToolSearch', 'Skill',
+            'NotebookEdit',
+            'mcp__nanoclaw__*',
+            'mcp__ollama__*'
+          ],
       env: sdkEnv,
       permissionMode: 'bypassPermissions',
       allowDangerouslySkipPermissions: true,
@@ -424,10 +433,14 @@ async function runQuery(
             NANOCLAW_IS_MAIN: containerInput.isMain ? '1' : '0',
           },
         },
-        ollama: {
-          command: 'node',
-          args: [path.join(path.dirname(mcpServerPath), 'ollama-mcp-stdio.js')],
-        },
+        // Skip Ollama MCP for local models — they're already running on Ollama
+        // and adding extra MCP tools bloats the manifest further.
+        ...(!process.env.NANOCLAW_LOCAL_MODEL && {
+          ollama: {
+            command: 'node',
+            args: [path.join(path.dirname(mcpServerPath), 'ollama-mcp-stdio.js')],
+          },
+        }),
       },
       hooks: {
         PreCompact: [{ hooks: [createPreCompactHook(containerInput.assistantName)] }],
